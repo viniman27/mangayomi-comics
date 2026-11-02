@@ -10,7 +10,7 @@
     "itemType": 0,
     "isNsfw": true,
     "hasCloudflare": true,
-    "version": "1.0.0",
+    "version": "1.0.1",
     "dateFormat": "",
     "dateFormatLocale": "",
     "sourceCodeLanguage": 1,
@@ -19,7 +19,7 @@
     "appMinVerReq": "0.9.95",
     "isFullData": false,
     "additionalParams": "",
-    "notes": "Experimental: testes locais aprovados; leitura real ainda não validada. Pode exigir verificação manual na WebView (Cloudflare)."
+    "notes": "Experimental 1.0.1: corrige dupla codificação JSON no leitor. Erros HTTP agora identificam método e rota. Leitura real ainda não homologada."
   },
   {
     "name": "ReadComicsOnline",

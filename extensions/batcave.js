@@ -4,7 +4,7 @@ const mangayomiSources = [{
   name: 'BatCave', lang: 'en', baseUrl: 'https://batcave.biz', apiUrl: '',
   iconUrl: 'https://batcave.biz/favicon.ico', typeSource: 'single',
   isManga: true, itemType: 0, isNsfw: true, hasCloudflare: true,
-  version: '1.0.0', dateFormat: '', dateFormatLocale: '',
+  version: '1.0.1', dateFormat: '', dateFormatLocale: '',
   pkgPath: 'manga/src/en/batcave.js', sourceCodeLanguage: 1
 }];
 
@@ -25,7 +25,10 @@ class DefaultExtension extends MProvider {
     if (response.statusCode === 403 || /cdn-cgi\/challenge-platform|<title>[^<]*(?:Just a moment|Um momento)|dle_guard/i.test(bodyText)) {
       throw new Error('BatCave: Cloudflare/DLE Guard blocked access. Open the source in Mangayomi WebView, complete the check and retry.');
     }
-    if (response.statusCode >= 400) throw new Error('BatCave: HTTP ' + response.statusCode);
+    if (response.statusCode >= 400) {
+      const route = url.replace(/^https?:\/\/[^/]+/i, '').split(/[?#]/)[0] || '/';
+      throw new Error('BatCave: HTTP ' + response.statusCode + ' (' + (body === undefined ? 'GET' : 'POST') + ' ' + route + ')');
+    }
     return bodyText;
   }
   parseList(html, page, latest) {
@@ -98,8 +101,8 @@ class DefaultExtension extends MProvider {
     const match = url.match(/\/reader\/(\d+)\/(\d+)/);
     if (!match) throw new Error('BatCave: Invalid chapter URL.');
     const endpoint = this.absolute('/engine/ajax/controller.php?mod=api&action=reader/getChapterData');
-    const data = JSON.parse(await this.request(endpoint, JSON.stringify({news_id: match[1], chapter_id: match[2]}), true));
-    if (!data.data || !Array.isArray(data.data.images) || !data.data.images.length) throw new Error('BatCave: chapter images unavailable.');
+    const data = JSON.parse(await this.request(endpoint, {news_id: match[1], chapter_id: match[2]}, true));
+    if (!data.data || !Array.isArray(data.data.images) || !data.data.images.length) throw new Error('BatCave: chapter images unavailable (comic ' + match[1] + ', chapter ' + match[2] + ').');
     return data.data.images.map(image => this.absolute(image));
   }
   getFilterList() { return []; }
