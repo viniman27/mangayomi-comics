@@ -1,0 +1,16 @@
+Mangayomi comics local extensions
+
+Protocol and selector references:
+https://github.com/keiyoushi/extensions-source
+Licensed under Apache License 2.0 (LICENSE included).
+BatCave implementation reference: src/en/batcave/src/eu/kanade/tachiyomi/extension/en/batcave/BatCave.kt and Dto.kt.
+ReadComicsOnline references: src/en/readcomicsonline/.../ReadComicsOnline.kt and lib-multisrc/mmrcms/.../MMRCMS.kt.
+JavaScript adapters are local adaptations, not official Keiyoushi or Mangayomi releases.
+No website comic images or chapters are bundled.
+
+Runtime reference:
+https://github.com/kodjodevf/mangayomi
+Upstream example (research only, not bundled extension code):
+https://github.com/Swakshan/mangayomi-swak-extensions
+
+Synthetic test fixtures are explicitly marked; they are not captured network responses and are not evidence of successful live access.
