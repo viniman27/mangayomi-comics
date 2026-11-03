@@ -4,7 +4,7 @@ const mangayomiSources = [{
   name: 'ReadComicsOnline', lang: 'en', baseUrl: 'https://readcomicsonline.ru',
   apiUrl: '', iconUrl: 'https://readcomicsonline.ru/favicon.ico',
   typeSource: 'single', isManga: true, itemType: 0,
-  isNsfw: true, hasCloudflare: true, version: '1.0.0',
+  isNsfw: true, hasCloudflare: true, version: '1.0.1',
   dateFormat: '', dateFormatLocale: '',
   pkgPath: 'manga/src/en/readcomicsonline.js', sourceCodeLanguage: 1
 }];
@@ -25,7 +25,37 @@ class DefaultExtension extends MProvider {
     return new Document(body);
   }
   async catalog(page, sort) {
-    const doc = await this.document(this.source.baseUrl + '/comic-list?sort=' + sort + '&page=' + page);
+    const url = this.source.baseUrl + '/comic-list?sort=' + sort + '&page=' + page;
+    let failure;
+    try {
+      const result = this.parseCatalog(await this.document(url));
+      if (result.list.length || page > 1) return result;
+      failure = new Error('ReadComicsOnline: HTTP catalog returned no comics.');
+    } catch (error) { failure = error; }
+    if (typeof evaluateJavascriptViaWebview !== 'function') throw failure;
+    const script = `(function () {
+      const started = Date.now();
+      function sendCatalog() {
+        if (document.querySelector('a[href*="/comic/"]') || Date.now() - started >= 15000) {
+          window.flutter_inappwebview.callHandler('setResponse', document.documentElement.outerHTML);
+        } else { setTimeout(sendCatalog, 250); }
+      }
+      sendCatalog();
+    })();`;
+    const html = await evaluateJavascriptViaWebview(url, this.getHeaders(url), [script], 20);
+    if (!html || !html.trim()) throw new Error('ReadComicsOnline 1.0.1: WebView empty or timed out. Open /comic-list in the source WebView and retry.');
+    if (/cdn-cgi\/challenge-platform|<title>[^<]*(?:Just a moment|Um momento)/i.test(html)) throw new Error('ReadComicsOnline 1.0.1: WebView still shows Cloudflare. Complete the check in the source WebView.');
+    const doc = new Document(html);
+    const cards = doc.select('div.comic-list-layout .grid > .group').length;
+    const titles = doc.select('a.block.text-sm.font-semibold').length;
+    const comicLinks = doc.select('a[href]').filter(a => /\/comic\//.test(a.getHref)).length;
+    const diagnostic = 'ReadComicsOnline 1.0.1: WebView catalog not recognized (cards=' + cards + ', titles=' + titles + ', comicLinks=' + comicLinks + ').';
+    if (!doc.select('div.comic-list-layout').length) throw new Error(diagnostic);
+    const result = this.parseCatalog(doc);
+    if (!result.list.length) throw new Error(diagnostic);
+    return result;
+  }
+  parseCatalog(doc) {
     if (!doc.select('div.comic-list-layout').length) throw new Error('ReadComicsOnline: unrecognized catalog layout.');
     const list = [];
     for (const entry of doc.select('div.comic-list-layout .grid > .group')) {
